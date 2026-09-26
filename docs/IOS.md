@@ -6,7 +6,7 @@
 
 ## 在 Mac 上运行
 
-安装当前稳定版 Flutter、Xcode 和 CocoaPods。打开终端，进入项目目录：
+安装 Flutter 3.47.5 和 Xcode。项目使用 Flutter 默认的 Swift Package Manager 集成；打开终端，进入项目目录：
 
 ```sh
 flutter pub get
