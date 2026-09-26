@@ -1,6 +1,6 @@
-# 01 · 购物冷静清单
+# 01 · 冷静购物
 
-个人 App 项目 01：一个免登录、数据保存在本机的 Android 购物计划应用。
+个人 App 项目 01：一个免登录、数据保存在本机的购物计划应用。
 
 把想买的东西先记下来，看看它们加在一起要花多少钱，再决定买不买。
 
@@ -9,7 +9,7 @@
   <img src="docs/screens/add.png" width="240" alt="手动添加页面" />
 </p>
 
-## 当前版本：0.1.1
+## Android 安装包：0.1.1
 
 **[下载 Android 安装包（APK，约 52.1 MiB）](https://github.com/Jaden-debug-beep/calm-shopping/releases/download/v0.1.1/calm-shopping-0.1.1.apk)** · [版本说明与校验值](https://github.com/Jaden-debug-beep/calm-shopping/releases/tag/v0.1.1)
 
@@ -23,7 +23,11 @@
 - 本地保存，完整备份包含图片；恢复前校验并确认覆盖。
 - 简洁界面：留白、细分隔线、小圆角，没有截图识别、分享导入或粘贴解析。
 
-支持 Android 7.0 及以上。当前为个人试用版本，尚未做完整真机兼容性验证。
+当前为个人试用版本，尚未做完整真机兼容性验证。
+
+## iPhone 版
+
+iOS 工程已加入仓库，应用名为“冷静购物”，最低支持 iOS 15。与 Android 共用购物清单、月报和本地备份逻辑。GitHub Actions 在 macOS 上编译并提供未签名的构建产物；在自己的 iPhone 上安装仍需要用 Apple ID 完成签名。具体步骤见 [iOS 构建说明](docs/IOS.md)。
 
 ## 开源来源
 

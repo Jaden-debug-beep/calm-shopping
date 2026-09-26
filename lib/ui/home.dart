@@ -202,7 +202,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     builder: (context, _) => Scaffold(
       appBar: AppBar(
         title: const Text(
-          '购物冷静清单',
+          '冷静购物',
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
         actions: [
@@ -942,14 +942,14 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
         subtitle: const Text('基于 Smart Expense Tracker 改造 · MIT'),
         onTap: () => showLicensePage(
           context: context,
-          applicationName: '购物冷静清单',
-          applicationVersion: '0.1.1',
+          applicationName: '冷静购物',
+          applicationVersion: '0.1.2',
           applicationLegalese:
               'Derived from erdipakrana/expense_app\nCopyright (c) 2026 Dipak Rana\nMIT License',
         ),
       ),
       const Text(
-        '0.1.1\n手动添加 · 无广告 · 无账号',
+        '0.1.2\n手动添加 · 无广告 · 无账号',
         style: TextStyle(color: Colors.black45, fontSize: 12, height: 1.8),
       ),
     ],
@@ -958,7 +958,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     setState(() => fileBusy = true);
     try {
       final path = await FilePicker.platform.saveFile(
-        dialogTitle: '保存购物冷静清单备份',
+        dialogTitle: '保存冷静购物备份',
         fileName: 'calm-shopping-${DateTime.now().dateKey}.json',
         type: FileType.custom,
         allowedExtensions: ['json'],

@@ -1,0 +1,45 @@
+name: iOS unsigned build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/ios.yml
+      - ios/**
+      - lib/**
+      - pubspec.yaml
+      - pubspec.lock
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - name: Get dependencies
+        run: flutter pub get
+      - name: Analyze Dart code
+        run: flutter analyze --no-pub
+      - name: Build iPhone app without signing
+        run: flutter build ios --release --no-codesign --no-pub
+      - name: Package unsigned app
+        run: |
+          mkdir -p build/ios/unsigned/Payload
+          cp -R build/ios/iphoneos/Runner.app build/ios/unsigned/Payload/
+          cd build/ios/unsigned
+          zip -qry ../calm-shopping-ios-unsigned.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: calm-shopping-ios-unsigned
+          path: build/ios/calm-shopping-ios-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 7

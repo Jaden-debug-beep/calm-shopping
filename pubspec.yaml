@@ -1,7 +1,7 @@
 name: smart_expense_tracker
-description: 购物冷静清单 — 本地个人消费计划
+description: 冷静购物 — 本地个人消费计划
 publish_to: 'none'
-version: 0.1.1+2
+version: 0.1.2+3
 environment:
   sdk: ^3.10.4
 dependencies:

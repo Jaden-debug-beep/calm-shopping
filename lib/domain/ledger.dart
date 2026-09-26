@@ -237,7 +237,7 @@ class Ledger {
       }
       final j = jsonDecode(source) as Map<String, dynamic>;
       if (j['format'] != 'calm-shopping' || j['version'] != 1) {
-        throw const FormatException('不是此版本支持的购物冷静清单备份');
+        throw const FormatException('不是此版本支持的冷静购物备份');
       }
       final raw = j['items'] as List;
       if (raw.length > 5000) throw const FormatException('记录数量超过上限');

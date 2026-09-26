@@ -48,7 +48,7 @@ class CalmApp extends StatelessWidget {
   final LedgerStore store;
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: '购物冷静清单',
+    title: '冷静购物',
     debugShowCheckedModeBanner: false,
     theme: AppTheme.lightTheme,
     locale: const Locale('zh', 'CN'),

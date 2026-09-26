@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="购物冷静清单" android:allowBackup="false"
+        android:label="冷静购物" android:allowBackup="false"
         android:name="${applicationName}"
         android:icon="@drawable/calm_icon"
         android:enableOnBackInvokedCallback="true">
