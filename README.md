@@ -11,6 +11,10 @@
 
 ## 当前版本：0.1.1
 
+**[下载 Android 安装包（APK，约 52.1 MiB）](https://github.com/Jaden-debug-beep/calm-shopping/releases/download/v0.1.1/calm-shopping-0.1.1.apk)** · [版本说明与校验值](https://github.com/Jaden-debug-beep/calm-shopping/releases/tag/v0.1.1)
+
+支持 Android 7.0 及以上。下载后在手机上打开 APK 安装；当前为个人试用版。
+
 - 手动记录名称、预计价格与日期，图片可选。
 - 按添加日期分组，按月查看计划总额、已记录消费和剩余待购。
 - 价格未知单独提示；已消费必须填写实付金额，支持补记消费。
