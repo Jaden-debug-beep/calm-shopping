@@ -11,7 +11,7 @@
 
 ## Android 安装包：0.1.4
 
-**[下载 Android 64 位安装包（约 18.2 MiB）](https://github.com/Jaden-debug-beep/calm-shopping/releases/download/v0.1.4/calm-shopping-0.1.4-arm64.apk)** · [32 位安装包](https://github.com/Jaden-debug-beep/calm-shopping/releases/download/v0.1.4/calm-shopping-0.1.4-arm32.apk) · [通用安装包](https://github.com/Jaden-debug-beep/calm-shopping/releases/download/v0.1.4/calm-shopping-0.1.4.apk) · [版本说明与校验值](https://github.com/Jaden-debug-beep/calm-shopping/releases/tag/v0.1.4)
+0.1.4 源码和安装包已完成；安装包尚未上传至 GitHub Releases。可查看[本版更新说明与校验值](docs/RELEASE-0.1.4.md)。[发布页](https://github.com/Jaden-debug-beep/calm-shopping/releases)暂时仍提供旧版，请核对版本号。
 
 支持 Android 7.0 及以上。通常选择 64 位安装包；不确定手机架构时选择通用安装包。下载后在手机上打开 APK 安装；当前为个人试用版。
 
