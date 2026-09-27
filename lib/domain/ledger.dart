@@ -6,7 +6,7 @@ int? parseMoney(String input) {
   final v = input.trim();
   if (v.isEmpty) return null;
   if (!RegExp(r'^\d{1,9}(\.\d{1,2})?$').hasMatch(v)) {
-    throw const FormatException('请输入非负金额，最多两位小数');
+    throw const FormatException('金额格式不正确：请输入非负金额，最多保留两位小数');
   }
   final p = v.split('.');
   final c =
@@ -18,7 +18,7 @@ int? parseMoney(String input) {
 
 String amountText(int c) =>
     '${c ~/ 100}.${(c % 100).toString().padLeft(2, '0')}';
-String money(int? c) => c == null ? '待补价格' : '¥${amountText(c)}';
+String money(int? c) => c == null ? '价格未填' : '¥${amountText(c)}';
 
 enum PlanState { pending, carried, bought, declined }
 
@@ -193,7 +193,7 @@ class Ledger {
   void buy(String id, int cents, DateTime date) {
     checkMoney(cents);
     final w = find(id);
-    if (w.declined) throw StateError('已放弃的记录不能直接购买');
+    if (w.declined) throw StateError('已决定不买的记录不能直接标记为已消费');
     if (date.startOfDay.isBefore(w.created.startOfDay)) {
       throw StateError('购买日期不能早于添加日期');
     }
@@ -237,7 +237,7 @@ class Ledger {
       }
       final j = jsonDecode(source) as Map<String, dynamic>;
       if (j['format'] != 'calm-shopping' || j['version'] != 1) {
-        throw const FormatException('不是此版本支持的冷静购物备份');
+        throw const FormatException('此备份格式或版本不受支持');
       }
       final raw = j['items'] as List;
       if (raw.length > 5000) throw const FormatException('记录数量超过上限');
@@ -258,7 +258,7 @@ class Ledger {
             w.title.length > 100 ||
             w.note.length > 2000 ||
             w.review.length > 2000) {
-          throw const FormatException('记录内容不完整或重复');
+          throw const FormatException('备份中的记录不完整或存在重复');
         }
         if (w.estimate != null) checkMoney(w.estimate!);
         if (w.photo != null &&

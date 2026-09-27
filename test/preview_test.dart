@@ -62,7 +62,7 @@ void main() {
       find.byKey(const Key('preview')),
       matchesGoldenFile('../docs/screens/home.png'),
     );
-    await t.tap(find.byTooltip('记下想买的'));
+    await t.tap(find.byTooltip('添加购买计划'));
     await t.pumpAndSettle();
     await expectLater(
       find.byKey(const Key('preview')),

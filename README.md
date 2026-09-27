@@ -9,11 +9,11 @@
   <img src="docs/screens/add.png" width="240" alt="手动添加页面" />
 </p>
 
-## Android 安装包：0.1.1
+## Android 安装包：0.1.4
 
-**[下载 Android 安装包（APK，约 52.1 MiB）](https://github.com/Jaden-debug-beep/calm-shopping/releases/download/v0.1.1/calm-shopping-0.1.1.apk)** · [版本说明与校验值](https://github.com/Jaden-debug-beep/calm-shopping/releases/tag/v0.1.1)
+**[下载 Android 64 位安装包（约 18.2 MiB）](https://github.com/Jaden-debug-beep/calm-shopping/releases/download/v0.1.4/calm-shopping-0.1.4-arm64.apk)** · [32 位安装包](https://github.com/Jaden-debug-beep/calm-shopping/releases/download/v0.1.4/calm-shopping-0.1.4-arm32.apk) · [通用安装包](https://github.com/Jaden-debug-beep/calm-shopping/releases/download/v0.1.4/calm-shopping-0.1.4.apk) · [版本说明与校验值](https://github.com/Jaden-debug-beep/calm-shopping/releases/tag/v0.1.4)
 
-支持 Android 7.0 及以上。下载后在手机上打开 APK 安装；当前为个人试用版。
+支持 Android 7.0 及以上。通常选择 64 位安装包；不确定手机架构时选择通用安装包。下载后在手机上打开 APK 安装；当前为个人试用版。
 
 - 手动记录名称、预计价格与日期，图片可选。
 - 按添加日期分组，按月查看计划总额、已记录消费和剩余待购。
@@ -22,6 +22,8 @@
 - 月报、可选消费上限、购买原因和买后感受。
 - 本地保存，完整备份包含图片；恢复前校验并确认覆盖。
 - 简洁界面：留白、细分隔线、小圆角，没有截图识别、分享导入或粘贴解析。
+
+0.1.4 修复了月份入口无法打开日期选择、切换月份后仍显示“本月”、补记往月记录后跳回当前月，以及修改消费记录时实付金额未带出的问题。原版应用图标保持不变。
 
 当前为个人试用版本，尚未做完整真机兼容性验证。
 
@@ -47,6 +49,14 @@ flutter build apk --release
 ```
 
 APK 输出到 `build/app/outputs/flutter-apk/app-release.apk`。本地交付副本位于 `dist/`，不纳入 Git 源码仓库。
+
+直接生成的 APK 同时包含 64 位 ARM、32 位 ARM 和 x86_64 三套原生库。给单台 Android 手机安装时，可按架构分别打包，减少下载体积：
+
+```sh
+flutter build apk --release --split-per-abi
+```
+
+产物分别为 `app-arm64-v8a-release.apk`、`app-armeabi-v7a-release.apk` 和 `app-x86_64-release.apk`。按手机处理器架构选择对应文件；拆分不会降低运行时内存占用。
 
 当前构建使用本机调试签名供个人试用，正式发布前需要配置自己的发布签名。仓库不包含任何签名密钥。
 

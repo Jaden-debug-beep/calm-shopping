@@ -21,6 +21,9 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   bool reportPrompt = false, fileBusy = false;
   Ledger get ledger => widget.store.ledger;
   String get keyMonth => month.monthKey;
+  bool get isCurrentMonth => keyMonth == DateTime.now().monthKey;
+  String get selectedMonthName =>
+      isCurrentMonth ? '本月' : '${month.year}年${month.month}月';
   @override
   void initState() {
     super.initState();
@@ -60,18 +63,18 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     final show = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        title: Text('$last 月报已生成'),
+        title: Text('$last 消费回顾已生成'),
         content: Text(
-          '已记录消费 ${money(s.actual)}，共 ${s.boughtCount} 笔。\n\n还没买的东西，可以保留到本月、不买，或者留待下次处理。',
+          '该月记录消费 ${money(s.actual)}，共 ${s.boughtCount} 笔。可查看消费明细与购买计划的处理结果。',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(c, false),
-            child: const Text('稍后查看'),
+            child: const Text('稍后'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(c, true),
-            child: const Text('看看月报'),
+            child: const Text('查看月报'),
           ),
         ],
       ),
@@ -96,19 +99,17 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   }
 
   Future<void> _edit({Wish? wish, bool direct = false}) async {
-    await Navigator.push(
+    final savedDate = await Navigator.push<DateTime>(
       context,
-      MaterialPageRoute<void>(
+      MaterialPageRoute<DateTime>(
         builder: (_) =>
             WishEditor(store: widget.store, wish: wish, direct: direct),
       ),
     );
-    if (mounted) {
+    if (mounted && savedDate != null) {
       setState(() {
-        if (wish == null) {
-          month = DateTime.now().startOfMonth;
-          filter = 0;
-        }
+        month = savedDate.startOfMonth;
+        filter = 0;
       });
     }
   }
@@ -124,9 +125,9 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   Future<void> _decline(Wish w) async {
     if (await confirm(
       context,
-      '这次不买了',
-      '“${w.title}”会保留在记录中，并从待购金额中移出。',
-      action: '确定不买',
+      '确认不买',
+      '“${w.title}”会保留在历史记录中，不再计入待购金额。',
+      action: '确认不买',
     )) {
       await _change((l) => l.decline(w.id));
     }
@@ -136,7 +137,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     if (await confirm(
       context,
       '删除这条记录？',
-      '“${w.title}”及其图片、跨月记录和实际消费会一起删除，相关月报会重新统计。此操作无法撤销。',
+      '将删除“${w.title}”的计划、图片和消费记录，并重新计算相关月份的数据。此操作无法在应用内撤销。',
       action: '删除',
     )) {
       await _change((l) => l.items.removeWhere((i) => i.id == w.id));
@@ -153,7 +154,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     final result = await showDialog<String>(
       context: context,
       builder: (c) => AlertDialog(
-        title: Text('${month.month} 月消费上限'),
+        title: Text('$selectedMonthName消费上限'),
         content: Form(
           key: form,
           child: TextFormField(
@@ -161,7 +162,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(
               prefixText: '¥ ',
-              helperText: '可选；留空即取消本月上限',
+              helperText: '留空并保存，可取消所选月份的上限',
             ),
             validator: (v) => validatePrice(v),
           ),
@@ -247,7 +248,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       floatingActionButton: page == 0
           ? FloatingActionButton(
               onPressed: widget.store.busy ? null : () => _edit(),
-              tooltip: '记下想买的',
+              tooltip: '添加购买计划',
               child: const Icon(Icons.add),
             )
           : null,
@@ -301,20 +302,21 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           Padding(
             padding: const EdgeInsets.only(top: 12),
             child: Text(
-              '${s.unknown} 项待补价格，未计入预计金额',
+              '${s.unknown} 项未填写价格，未计入金额合计',
               style: TextStyle(color: Colors.brown.shade700),
             ),
           ),
         const SizedBox(height: 14),
         _budgetCard(s),
-        if (ledger.unresolved(DateTime.now().monthKey).isNotEmpty)
+        if (isCurrentMonth &&
+            ledger.unresolved(DateTime.now().monthKey).isNotEmpty)
           _pendingBanner(),
         const SizedBox(height: 22),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              for (final (i, label) in ['全部', '待考虑', '已消费', '不买了'].indexed)
+              for (final (i, label) in ['全部', '待决定', '已消费', '决定不买'].indexed)
                 Padding(
                   padding: const EdgeInsets.only(right: 24),
                   child: Semantics(
@@ -354,8 +356,8 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
         ),
         if (rows.isEmpty)
           _empty(
-            filter == 0 ? '给想买的东西，一个停留的地方' : '这里暂时没有记录',
-            filter == 0 ? '从一件衣服、一次聚餐开始。\n记下来，看看它们加在一起是多少。' : '切换筛选，看看其他记录。',
+            filter == 0 ? '所选月份暂无记录' : '此分类暂无记录',
+            filter == 0 ? '添加购买计划后，可在这里查看金额合计。' : '切换分类可查看其他记录。',
           ),
         for (final group in grouped.entries) ...[
           Padding(
@@ -383,19 +385,19 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
           children: [
-            Icon(Icons.spa_outlined, color: Color(0xFF7C8C6B), size: 18),
-            SizedBox(width: 8),
+            const Icon(Icons.spa_outlined, color: Color(0xFF7C8C6B), size: 18),
+            const SizedBox(width: 8),
             Text(
-              '把想买的放在一起看',
-              style: TextStyle(color: Colors.black54, fontSize: 12),
+              '$selectedMonthName消费概览',
+              style: const TextStyle(color: Colors.black54, fontSize: 12),
             ),
           ],
         ),
         const SizedBox(height: 20),
         const Text(
-          '如果待购的都买了，本月合计',
+          '已消费与待购合计',
           style: TextStyle(color: Colors.black87, fontSize: 13),
         ),
         const SizedBox(height: 6),
@@ -414,8 +416,8 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
         const SizedBox(height: 8),
         Text(
           s.pendingUnknown > 0
-              ? '已消费 + 待购估价 · 另有 ${s.pendingUnknown} 项待补价格'
-              : '已消费 + 待购估价 · 给决定多一点余地',
+              ? '实际支付 + 待购预计价格；另有 ${s.pendingUnknown} 项待购未填写价格'
+              : '实际支付 + 待购预计价格',
           style: const TextStyle(fontSize: 12, color: Colors.black54),
         ),
       ],
@@ -423,9 +425,9 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   );
   Widget _metrics(MonthlySummary s) => Row(
     children: [
-      _metric('计划总额', money(s.planned)),
+      _metric('计划金额', money(s.planned)),
       _metric('已记录消费', money(s.actual)),
-      _metric('剩余待购', money(s.remaining)),
+      _metric('待购金额', money(s.remaining)),
     ],
   );
   Widget _metric(String label, String value) => Expanded(
@@ -468,8 +470,8 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                   Expanded(
                     child: Text(
                       budget == null
-                          ? '给这个月设个消费上限（可选）'
-                          : '本月上限 ${money(budget)}',
+                          ? '设置$selectedMonthName消费上限（可选）'
+                          : '$selectedMonthName消费上限 ${money(budget)}',
                       style: const TextStyle(fontSize: 13),
                     ),
                   ),
@@ -489,8 +491,8 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                 const SizedBox(height: 8),
                 Text(
                   s.forecast > budget
-                      ? '按当前计划，预计超出 ${money(s.forecast - budget)}'
-                      : '按当前计划，还留有 ${money(budget - s.forecast)}',
+                      ? '按已消费与待购金额计算，超出 ${money(s.forecast - budget)}'
+                      : '按已消费与待购金额计算，剩余 ${money(budget - s.forecast)}',
                   style: const TextStyle(fontSize: 12, color: Colors.black54),
                 ),
               ],
@@ -507,25 +509,28 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       contentPadding: EdgeInsets.zero,
       leading: const Icon(Icons.history),
       title: Text(
-        '${ledger.unresolved(DateTime.now().monthKey).length} 项往月心愿，等你再看看',
+        '${ledger.unresolved(DateTime.now().monthKey).length} 项往月待购尚未处理',
         style: const TextStyle(fontSize: 13),
       ),
-      subtitle: const Text('保留到本月、不买，或者以后再说', style: TextStyle(fontSize: 12)),
+      subtitle: const Text('可保留到本月，或决定不买', style: TextStyle(fontSize: 12)),
       trailing: const Icon(Icons.chevron_right),
-      onTap: () => setState(() => page = 1),
+      onTap: () => setState(() {
+        month = DateTime.now().startOfMonth;
+        page = 1;
+      }),
     ),
   );
   String _status(Wish w) {
     if (w.purchase?.date.monthKey == keyMonth) return '已消费';
     return switch (w.months[keyMonth]?.state) {
-      PlanState.declined => '不买了',
-      PlanState.carried => '已保留到后月',
+      PlanState.declined => '决定不买',
+      PlanState.carried => '已转至后续月份',
       _ =>
         w.purchase != null
-            ? '当月未买 · 后来已买'
+            ? '当月未买 · 后续已消费'
             : w.declined
-            ? '当月未买 · 后来放弃'
-            : '待考虑',
+            ? '当月未买 · 后续决定不买'
+            : '待决定',
     };
   }
 
@@ -641,19 +646,19 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 12),
-                  Text('添加于 ${w.created.dateKey} · 预计 ${money(w.estimate)}'),
+                  Text('添加日期 ${w.created.dateKey} · 预计价格 ${money(w.estimate)}'),
                   if (w.purchase != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
-                        '${w.purchase!.date.dateKey} 实付 ${money(w.purchase!.cents)}',
+                        '消费日期 ${w.purchase!.date.dateKey} · 实付 ${money(w.purchase!.cents)}',
                       ),
                     ),
                   if (w.months.length > 1)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
-                        '保留记录：${(w.months.keys.toList()..sort()).join(' → ')}',
+                        '计划月份：${(w.months.keys.toList()..sort()).join(' → ')}',
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.black54,
@@ -677,12 +682,12 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                   if (w.note.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 16),
-                      child: Text('给自己的备注\n${w.note}'),
+                      child: Text('备注\n${w.note}'),
                     ),
                   if (w.review.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 16),
-                      child: Text('买后感受\n${w.review}'),
+                      child: Text('消费感受\n${w.review}'),
                     ),
                   const SizedBox(height: 24),
                   if (w.pending)
@@ -693,13 +698,13 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                         FilledButton.icon(
                           onPressed: widget.store.busy ? null : () => _buy(w),
                           icon: const Icon(Icons.check),
-                          label: const Text('已消费'),
+                          label: const Text('记录消费'),
                         ),
                         OutlinedButton(
                           onPressed: widget.store.busy
                               ? null
                               : () => _decline(w),
-                          child: const Text('不买了'),
+                          child: const Text('决定不买'),
                         ),
                         if (w.latestMonth.compareTo(DateTime.now().monthKey) <
                             0)
@@ -717,7 +722,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                   if (w.purchase != null)
                     OutlinedButton(
                       onPressed: widget.store.busy ? null : () => _buy(w),
-                      child: const Text('修改实付金额 / 日期'),
+                      child: const Text('修改消费金额与日期'),
                     ),
                   Wrap(
                     spacing: 12,
@@ -728,7 +733,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                           _edit(wish: w);
                         },
                         icon: const Icon(Icons.edit_outlined, size: 18),
-                        label: Text(w.purchase != null ? '编辑 / 买后感受' : '编辑'),
+                        label: const Text('编辑记录'),
                       ),
                       TextButton.icon(
                         onPressed: () async {
@@ -754,7 +759,9 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
 
   Widget _report() {
     final s = ledger.summary(keyMonth);
-    final pending = ledger.unresolved(DateTime.now().monthKey);
+    final pending = isCurrentMonth
+        ? ledger.unresolved(DateTime.now().monthKey)
+        : <Wish>[];
     final bought = ledger.items
         .where((w) => w.purchase?.date.monthKey == keyMonth)
         .toList();
@@ -765,95 +772,101 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       padding: const EdgeInsets.all(24),
       children: [
         Text(
-          '${month.month} 月，回头看一看',
+          '${month.year}年${month.month}月消费回顾',
           style: Theme.of(
             context,
           ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
-        const Text('不评判每一笔钱，了解自己的选择。', style: TextStyle(color: Colors.black54)),
+        const Text(
+          '汇总所选月份在应用中记录的计划与消费。',
+          style: TextStyle(color: Colors.black54),
+        ),
         const SizedBox(height: 26),
         _hero(s),
         const SizedBox(height: 18),
         _metrics(s),
-        if (s.unknown > 0) Text('有 ${s.unknown} 项价格未填写，预计金额不包含这些项目。'),
+        if (s.unknown > 0) Text('${s.unknown} 项未填写价格，未计入金额合计。'),
         const SizedBox(height: 24),
-        _heading('买下的 · ${bought.length} 项'),
-        if (bought.isEmpty)
-          const Text('这个月还没有记录实际消费。')
-        else
-          ...bought.map(_tile),
+        _heading('已消费 · ${bought.length} 项'),
+        if (bought.isEmpty) const Text('所选月份暂无消费记录。') else ...bought.map(_tile),
         const SizedBox(height: 24),
         _heading('决定不买 · ${declined.length} 项'),
         Text(
-          '放弃的计划金额 ${money(s.declined)}',
+          '决定不买的计划金额 ${money(s.declined)}',
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 6),
         const Text(
-          '这是放弃的估价，不等于实际省下的钱。',
+          '按计划价格计算，不代表实际节省金额。',
           style: TextStyle(fontSize: 12, color: Colors.black54),
         ),
         const SizedBox(height: 12),
         ...declined.map(_tile),
-        const SizedBox(height: 24),
-        _heading('往月未买的，还想保留吗？'),
-        const Text(
-          '不处理也没关系，记录会一直留着。只有选择保留，才会计入本月计划。',
-          style: TextStyle(fontSize: 13, color: Colors.black54),
-        ),
-        const SizedBox(height: 12),
-        if (pending.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text('目前没有需要跨月处理的记录。'),
+        if (isCurrentMonth) ...[
+          const SizedBox(height: 24),
+          _heading('往月待处理计划'),
+          const Text(
+            '这些记录不会自动计入当前月份。选择“保留到本月”后，才会计入当前月计划。',
+            style: TextStyle(fontSize: 13, color: Colors.black54),
           ),
-        ...pending.map(
-          (w) => Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            shape: const Border(
-              bottom: BorderSide(color: Color(0xFFDDDED5), width: 0.7),
+          const SizedBox(height: 12),
+          if (pending.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('暂无需要处理的往月计划。'),
             ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    w.title,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  Text('${w.created.dateKey} 添加 · ${money(w.estimate)}'),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      FilledButton.tonal(
-                        onPressed: widget.store.busy
-                            ? null
-                            : () => _change(
-                                (l) => l.carry(w.id, DateTime.now().monthKey),
-                              ),
-                        child: const Text('保留到本月'),
-                      ),
-                      TextButton(
-                        onPressed: widget.store.busy ? null : () => _decline(w),
-                        child: const Text('不买了'),
-                      ),
-                      TextButton(
-                        onPressed: () => _details(w.id),
-                        child: const Text('查看'),
-                      ),
-                    ],
-                  ),
-                ],
+          ...pending.map(
+            (w) => Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: const Border(
+                bottom: BorderSide(color: Color(0xFFDDDED5), width: 0.7),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      w.title,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      '添加日期 ${w.created.dateKey} · 预计价格 ${money(w.estimate)}',
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        FilledButton.tonal(
+                          onPressed: widget.store.busy
+                              ? null
+                              : () => _change(
+                                  (l) => l.carry(w.id, DateTime.now().monthKey),
+                                ),
+                          child: const Text('保留到本月'),
+                        ),
+                        TextButton(
+                          onPressed: widget.store.busy
+                              ? null
+                              : () => _decline(w),
+                          child: const Text('决定不买'),
+                        ),
+                        TextButton(
+                          onPressed: () => _details(w.id),
+                          child: const Text('查看'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
+        ],
         const SizedBox(height: 28),
         const Text(
-          '统计口径：计划总额含本月新建与确认保留的计划；实际消费按支付日期计入，包含补记消费。统计仅覆盖你在这里记录的内容。',
+          '统计说明：计划金额按添加或保留月份计入；实际消费按付款日期计入，包含补记记录。这里只统计在本应用中记录的内容。',
           style: TextStyle(fontSize: 12, height: 1.7, color: Colors.black54),
         ),
         const SizedBox(height: 24),
@@ -900,21 +913,24 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   Widget _settings() => ListView(
     padding: const EdgeInsets.all(24),
     children: [
-      _heading('只属于你的清单'),
-      const Text('免登录，记录和图片都保存在本机。', style: TextStyle(color: Colors.black54)),
+      _heading('数据与备份'),
+      const Text(
+        '无需登录。记录和图片保存在本机，本应用不提供云同步。',
+        style: TextStyle(color: Colors.black54),
+      ),
       const SizedBox(height: 28),
       ListTile(
         contentPadding: EdgeInsets.zero,
         leading: const Icon(Icons.save_alt),
-        title: const Text('导出完整备份'),
-        subtitle: const Text('包含记录、图片、预算与买后感受'),
+        title: const Text('导出备份'),
+        subtitle: const Text('包含记录、图片、消费上限和消费感受'),
         onTap: fileBusy || widget.store.busy ? null : _export,
       ),
       ListTile(
         contentPadding: EdgeInsets.zero,
         leading: const Icon(Icons.restore),
-        title: const Text('从备份恢复'),
-        subtitle: const Text('恢复前会校验，并请你确认覆盖当前数据'),
+        title: const Text('导入备份'),
+        subtitle: const Text('校验通过并确认后，将覆盖当前数据'),
         onTap: fileBusy || widget.store.busy ? null : _import,
       ),
       if (fileBusy) const LinearProgressIndicator(),
@@ -925,14 +941,14 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           border: Border(left: BorderSide(color: Color(0xFFB78950), width: 2)),
         ),
         child: const Text(
-          '换手机或卸载前，请导出备份到你选定的位置。备份内含个人记录和图片，请自行妥善保管。',
+          '更换设备或卸载应用前，请先导出备份。备份包含个人记录和图片，请妥善保管。',
           style: TextStyle(height: 1.7, fontSize: 13),
         ),
       ),
       const SizedBox(height: 32),
       _heading('使用方式'),
       const Text(
-        '① 手动记下名称和预计价格，图片可选。\n② 看看本月全部计划加起来是多少。\n③ 买了填写实付，不买就留个决定。\n④ 下个月打开，回顾消费和未买的心愿。',
+        '① 添加购买计划，填写预计价格，图片可选。\n② 查看本月计划金额与待购金额。\n③ 消费后记录实付金额；决定不买时更新状态。\n④ 每月查看消费回顾，并处理往月待购计划。',
         style: TextStyle(height: 2),
       ),
       const SizedBox(height: 32),
@@ -943,13 +959,13 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
         onTap: () => showLicensePage(
           context: context,
           applicationName: '冷静购物',
-          applicationVersion: '0.1.2',
+          applicationVersion: '0.1.4',
           applicationLegalese:
               'Derived from erdipakrana/expense_app\nCopyright (c) 2026 Dipak Rana\nMIT License',
         ),
       ),
       const Text(
-        '0.1.2\n手动添加 · 无广告 · 无账号',
+        '0.1.4\n手动添加 · 无广告 · 无账号',
         style: TextStyle(color: Colors.black45, fontSize: 12, height: 1.8),
       ),
     ],
@@ -964,7 +980,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
         allowedExtensions: ['json'],
         bytes: Uint8List.fromList(utf8.encode(ledger.encode())),
       );
-      if (path != null && mounted) toast(context, '备份已保存，包含图片');
+      if (path != null && mounted) toast(context, '备份已保存');
     } catch (e) {
       if (mounted) toast(context, '导出失败：$e');
     } finally {
@@ -989,13 +1005,13 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       if (!mounted) return;
       if (await confirm(
         context,
-        '恢复 ${candidate.items.length} 条记录？',
-        '备份已通过校验。恢复将用备份完整替换当前 ${ledger.items.length} 条记录及图片，不会合并。',
-        action: '覆盖并恢复',
+        '导入 ${candidate.items.length} 条记录？',
+        '备份已通过校验。导入后将替换当前 ${ledger.items.length} 条记录及图片，不会合并。',
+        action: '确认覆盖',
       )) {
         await widget.store.restore(candidate);
         if (mounted) {
-          toast(context, '备份已恢复');
+          toast(context, '备份已导入');
           setState(() {
             month = DateTime.now().startOfMonth;
             filter = 0;

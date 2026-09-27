@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 /// Widget: MonthSelector
 ///
 /// Provides month navigation controls for the transactions view.
-/// Allows moving between months and jumping to today.
+/// Allows moving between months and choosing a date to view its month.
 class MonthSelector extends StatelessWidget {
   const MonthSelector({
     super.key,
@@ -16,6 +16,21 @@ class MonthSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final now = DateTime.now();
+    final isCurrentMonth =
+        currentMonth.year == now.year && currentMonth.month == now.month;
+    final selectedLabel = isCurrentMonth ? '本月' : '${currentMonth.month}月';
+
+    Future<void> chooseDate() async {
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: isCurrentMonth ? now : currentMonth,
+        firstDate: DateTime(2000),
+        lastDate: DateTime(2099, 12, 31),
+        helpText: '选择日期，查看所在月份',
+      );
+      if (picked != null) onChanged(DateTime(picked.year, picked.month));
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
@@ -33,21 +48,28 @@ class MonthSelector extends StatelessWidget {
           // Previous Month Button
           IconButton(
             icon: const Icon(Icons.chevron_left),
-            onPressed: () =>
-                onChanged(DateTime(currentMonth.year, currentMonth.month - 1)),
+            onPressed: currentMonth.year == 2000 && currentMonth.month == 1
+                ? null
+                : () => onChanged(
+                    DateTime(currentMonth.year, currentMonth.month - 1),
+                  ),
             tooltip: '上个月',
           ),
 
           const SizedBox(width: 8),
 
-          // Current Month Display
+          // The displayed month is also a date-picker entry point.
           Expanded(
-            child: Center(
-              child: Text(
-                '${currentMonth.year} 年 ${currentMonth.month} 月',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
+            child: TextButton(
+              onPressed: chooseDate,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '${currentMonth.year} 年 ${currentMonth.month} 月',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
                 ),
               ),
             ),
@@ -58,18 +80,21 @@ class MonthSelector extends StatelessWidget {
           // Next Month Button
           IconButton(
             icon: const Icon(Icons.chevron_right),
-            onPressed: () =>
-                onChanged(DateTime(currentMonth.year, currentMonth.month + 1)),
+            onPressed: currentMonth.year == 2099 && currentMonth.month == 12
+                ? null
+                : () => onChanged(
+                    DateTime(currentMonth.year, currentMonth.month + 1),
+                  ),
             tooltip: '下个月',
           ),
 
           const SizedBox(width: 8),
 
-          // Today Button
+          // Keep the calendar action's label in sync with the selected month.
           TextButton.icon(
-            onPressed: () => onChanged(DateTime.now()),
+            onPressed: chooseDate,
             icon: const Icon(Icons.today, size: 18),
-            label: const Text('本月'),
+            label: Text(selectedLabel),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               shape: RoundedRectangleBorder(

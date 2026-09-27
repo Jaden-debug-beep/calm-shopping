@@ -63,7 +63,7 @@ class _WishEditorState extends State<WishEditor> {
   Future<void> _loadPhoto(XFile f) async {
     final bytes = await f.readAsBytes();
     if (bytes.length > 8 * 1024 * 1024) {
-      throw const FormatException('图片过大，请选择小于 8 MB 的图片');
+      throw const FormatException('图片超过 8 MB，请选择较小的图片');
     }
     if (mounted) setState(() => photo = base64Encode(bytes));
   }
@@ -116,7 +116,7 @@ class _WishEditorState extends State<WishEditor> {
           l.items.add(w);
         }
       });
-      if (mounted) Navigator.pop(context);
+      if (mounted) Navigator.pop(context, widget.wish == null ? date : null);
     } catch (e) {
       if (mounted) toast(context, e);
     } finally {
@@ -131,8 +131,8 @@ class _WishEditorState extends State<WishEditor> {
         widget.wish != null
             ? '编辑记录'
             : widget.direct
-            ? '补记一笔消费'
-            : '记下想买的',
+            ? '补记消费'
+            : '添加购买计划',
       ),
     ),
     body: SafeArea(
@@ -145,7 +145,11 @@ class _WishEditorState extends State<WishEditor> {
               padding: const EdgeInsets.all(24),
               children: [
                 Text(
-                  widget.direct ? '已经花掉的钱，也可以在这里补上。' : '先记下来，让每一个想买都有全貌。',
+                  widget.wish != null
+                      ? '修改记录信息，保存后更新清单。'
+                      : widget.direct
+                      ? '记录已发生的消费，金额将计入付款月份。'
+                      : '记录想购买的商品，查看本月计划金额。',
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
                 const SizedBox(height: 28),
@@ -170,8 +174,8 @@ class _WishEditorState extends State<WishEditor> {
                       labelText: widget.direct ? '实际支付金额' : '预计价格（可留空）',
                       prefixText: '¥ ',
                       helperText: widget.direct
-                          ? '填写真实支付的金额'
-                          : '暂不清楚就留空；不会按 0 元计入合计',
+                          ? '填写实际支付金额'
+                          : '价格未知可留空，未填写的项目不计入金额合计',
                     ),
                     validator: (v) => validatePrice(v, required: widget.direct),
                   ),
@@ -208,7 +212,7 @@ class _WishEditorState extends State<WishEditor> {
                       fit: BoxFit.cover,
                       errorBuilder: (_, _, _) => const SizedBox(
                         height: 80,
-                        child: Center(child: Text('图片无法显示，可以更换')),
+                        child: Center(child: Text('图片无法显示，请更换图片')),
                       ),
                     ),
                   ),
@@ -241,8 +245,8 @@ class _WishEditorState extends State<WishEditor> {
                   maxLines: 3,
                   maxLength: 2000,
                   decoration: const InputDecoration(
-                    labelText: '给自己的备注（可选）',
-                    hintText: '为什么想买？已有的东西能代替吗？',
+                    labelText: '备注（可选）',
+                    hintText: '例如：购买原因、已有替代品',
                   ),
                 ),
                 if (widget.wish?.purchase != null) ...[
@@ -252,8 +256,8 @@ class _WishEditorState extends State<WishEditor> {
                     maxLines: 3,
                     maxLength: 2000,
                     decoration: const InputDecoration(
-                      labelText: '买后感受（可选）',
-                      hintText: '用上了吗？满意，还是有点后悔？',
+                      labelText: '消费感受（可选）',
+                      hintText: '这笔消费是否符合预期？',
                     ),
                   ),
                 ],
@@ -327,8 +331,11 @@ class PurchaseDialog extends StatefulWidget {
 
 class _PurchaseDialogState extends State<PurchaseDialog> {
   final form = GlobalKey<FormState>();
-  final price =
-      TextEditingController(); // Never prefill from the estimated price.
+  late final price = TextEditingController(
+    text: widget.wish.purchase == null
+        ? ''
+        : amountText(widget.wish.purchase!.cents),
+  ); // Only an existing actual payment is prefilled, never the estimate.
   late DateTime date = widget.wish.purchase?.date ?? DateTime.now().startOfDay;
   @override
   void dispose() {
@@ -338,7 +345,7 @@ class _PurchaseDialogState extends State<PurchaseDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: Text(widget.wish.purchase == null ? '确认已消费' : '修改实际消费'),
+    title: Text(widget.wish.purchase == null ? '记录实际消费' : '修改消费记录'),
     content: Form(
       key: form,
       child: SingleChildScrollView(
@@ -348,7 +355,7 @@ class _PurchaseDialogState extends State<PurchaseDialog> {
           children: [
             Text(widget.wish.title),
             const SizedBox(height: 8),
-            Text('原预计：${money(widget.wish.estimate)}'),
+            Text('预计价格：${money(widget.wish.estimate)}'),
             const SizedBox(height: 20),
             TextFormField(
               controller: price,
@@ -384,7 +391,7 @@ class _PurchaseDialogState extends State<PurchaseDialog> {
     actions: [
       TextButton(
         onPressed: () => Navigator.pop(context),
-        child: const Text('再想想'),
+        child: const Text('取消'),
       ),
       FilledButton(
         onPressed: () {
@@ -392,7 +399,7 @@ class _PurchaseDialogState extends State<PurchaseDialog> {
             Navigator.pop(context, Purchase(parseMoney(price.text)!, date));
           }
         },
-        child: const Text('确认金额'),
+        child: Text(widget.wish.purchase == null ? '确认记录' : '保存修改'),
       ),
     ],
   );

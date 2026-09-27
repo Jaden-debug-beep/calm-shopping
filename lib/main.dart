@@ -28,7 +28,7 @@ Future<void> main() async {
                   const Icon(Icons.lock_outline, size: 48),
                   const SizedBox(height: 16),
                   const Text(
-                    '本地记录暂时无法读取。\n原数据已保留，请勿卸载应用。',
+                    '无法读取本地记录。\n数据尚未删除，请勿卸载应用。',
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
